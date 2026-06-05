@@ -1,0 +1,2371 @@
+{
+  "name": "AI TASKTIFY FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENROUTER_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a highly efficient productivity AI that prioritizes simplicity and realism.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create a VERY SIMPLE daily schedule.\\n\\nINPUT TASKS:\\n{{$json.title}}\\n\\nSTRICT RULES:\\n- Only return 1–2 main activities\\n- DO NOT break tasks into smaller steps\\n- DO NOT expand tasks\\n- Choose the MOST important tasks only\\n- Tasks must be clear and concise\\n- Start from 09:00\\n- End before 23:00\\n- No overlap\\n\\nOUTPUT STRICT JSON:\\n[\\n  {\\\"task\\\":\\\"...\\\",\\\"time\\\":\\\"HH:MM\\\"}\\n]\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -14224,
+        -6096
+      ],
+      "id": "93edb654-6469-42d5-a2e8-0e23318a6911",
+      "name": "HTTP Request5",
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"task\": \"{{$json.task}}\",\n  \"time\": \"{{$json.time}}\",\n  \"source\": \"ai\",\n  \"chat_id\": \"YOUR_TELEGRAM_CHAT_ID\",\n  \"date\": \"={{new Date().toISOString().split('T')[0]}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -13552,
+        -6096
+      ],
+      "id": "f56a6279-6506-4d5d-bb24-388d8990789e",
+      "name": "HTTP Request7"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tasks = [];\n\nfor (const item of $input.all()) {\n  if (item.json.title && typeof item.json.title === \"string\") {\n    tasks.push(item.json.title.trim());\n  }\n}\n\nconst uniqueTasks = [...new Set(tasks)];\n\nreturn [\n  {\n    json: {\n      title: uniqueTasks.join(\", \")\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14672,
+        -6096
+      ],
+      "id": "ddb5c556-9151-46d7-ace7-f848965db594",
+      "name": "Code in JavaScript4",
+      "notesInFlow": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n\n  let text =\n    item.json.schedule ||\n    item.json.choices?.[0]?.message?.content ||\n    \"\";\n\n  // 🔥 BUANG ```json ``` kalau ada\n  text = text.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n\n  let parsed = [];\n\n  try {\n    parsed = JSON.parse(text);\n  } catch (e) {\n    console.log(\"Parse error:\", text);\n    parsed = [];\n  }\n\n  for (const t of parsed) {\n    if (t.task && t.time) {\n      items.push({\n        json: {\n          task: t.task,\n          time: t.time,\n          source: \"ai\"\n        }\n      });\n    }\n  }\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13776,
+        -6096
+      ],
+      "id": "53d2402a-c038-4beb-ad0d-d9d82c98f04c",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/tasks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{$json.title}}\",\n  \"deadline\": \"{{$json.deadline}}\",\n  \"priority\": \"{{$json.priority}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -14448,
+        -6096
+      ],
+      "id": "f16437e5-efda-4a0f-a7a6-bda43ed3c4dd",
+      "name": "HTTP Request1",
+      "executeOnce": true,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -15120,
+        -6096
+      ],
+      "id": "3a94f863-27ab-4c30-9c27-38126ff5ce94",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/tasks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -14896,
+        -6096
+      ],
+      "id": "3bc77b7c-1ecd-4911-bf0d-c04ed961c21c",
+      "name": "HTTP Request8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7399f49b-61c9-404f-b533-6ca2a5a717b4",
+              "name": "schedule",
+              "value": "={{ $json.choices[0].message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "44d3b677-0345-47d3-998a-9738854e0e6f",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -14000,
+        -6096
+      ],
+      "id": "053fc714-1fc9-4e8a-9af8-07a0e598944e",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "55384231-6216-4766-ab25-4d0bedf640bf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -15104,
+        -6656
+      ],
+      "id": "085247c9-99d5-40c6-b6d3-01b9132e7d8c",
+      "name": "Webhook (Web App)1",
+      "webhookId": "55384231-6216-4766-ab25-4d0bedf640bf",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.message || '';\nconst chatId = $json.chat_id || 'YOUR_TELEGRAM_CHAT_ID';\nconst source = $json.source || 'web_app';\n\nreturn {\n  json: {\n    task: text,\n    source: source,\n    chat_id: chatId,\n    user_text: text.trim(),\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14880,
+        -6656
+      ],
+      "id": "b351cfc4-0815-424e-841f-1b9f87a70ace",
+      "name": "Code: Parse Webhook Data1"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={\n   \"chat_id\": \"eq.YOUR_TELEGRAM_CHAT_ID\",\n   \"date\": \"eq.{{new Date().toISOString().split('T')[0]}}\",\n   \"order\": \"time.asc\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -14656,
+        -6656
+      ],
+      "id": "e7459656-c5ce-4b0f-a531-2d4cf91f672e",
+      "name": "HTTP: Get Current Schedule1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENROUTER_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n   \"model\": \"openai/gpt-4o-mini\",\n   \"messages\": [\n    {\n       \"role\": \"system\",\n       \"content\": \"You are a highly efficient productivity AI. Parse user requests and extract task information. Return JSON only.\"\n    },\n    {\n       \"role\": \"user\",\n       \"content\": \"Extract tasks from: {{$json.user_text}}. Return in format: [{\\\"task\\\": \\\"...\\\", \\\"time\\\": \\\"HH:MM\\\", \\\"date\\\": \\\"YYYY-MM-DD\\\"}]\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -14432,
+        -6656
+      ],
+      "id": "4c806426-5a63-4b17-b421-80904bc94348",
+      "name": "HTTP: AI Parse Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n  let text = item.json.choices?.[0]?.message?.content || \"[]\";\n  \n  // Clean markdown code blocks\n  text = text.replace(/```json/g, '').replace(/```/g, '').trim();\n  \n  let parsed = [];\n  try {\n    parsed = JSON.parse(text);\n  } catch (e) {\n    console.log(\"Parse error:\", text);\n    parsed = [];\n  }\n  \n  for (const t of parsed) {\n    if (t.task && t.time) {\n      items.push({\n        json: {\n          task: t.task,\n          time: t.time,\n          date: t.date || new Date().toISOString().split('T')[0],\n          source: \"ai\",\n          chat_id: \"YOUR_TELEGRAM_CHAT_ID\",\n          status: \"pending\"\n        }\n      });\n    }\n  }\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14208,
+        -6656
+      ],
+      "id": "01b5368e-07fe-47ac-8132-bdaa6e5715e0",
+      "name": "Code: Parse AI Response1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n   \"task\": \"{{$json.task}}\",\n   \"time\": \"{{$json.time}}\",\n   \"date\": \"{{$json.date}}\",\n   \"source\": \"{{$json.source}}\",\n   \"chat_id\": \"{{$json.chat_id}}\",\n   \"status\": \"{{$json.status}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -13984,
+        -6656
+      ],
+      "id": "5e6db75a-2390-4be1-b71e-a8e14b83a46f",
+      "name": "HTTP: Insert Schedule from Web1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.all();\nconst chatId = 'YOUR_TELEGRAM_CHAT_ID';\n\nlet reply = '✅ Jadwal berhasil ditambahkan!\\n\\n';\n\ninserted.forEach((item, idx) => {\n  reply += `${idx + 1}. ⏰ ${item.json.time} - ${item.json.task}\\n`;\n});\n\nreply += '\\nTotal: ' + inserted.length + ' tugas';\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    reply: reply,\n    tasks_added: inserted.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13760,
+        -6656
+      ],
+      "id": "f440ff94-5c19-45d9-80e7-cfa2d31c725d",
+      "name": "Code: Format Webhook Response1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\nconst chatId = 'YOUR_TELEGRAM_CHAT_ID';\nconst text = $json.user_text || '';\n\n// Initialize jika belum ada\nif (!global[chatId]) {\n  global[chatId] = { mode: 'menu', conversation: [] };\n}\n\nlet currentMode = global[chatId].mode || 'menu';\n\n// LOGIKA PENTING: Jika command /ngobrol, set mode chat\nif (text === '/ngobrol') {\n  currentMode = 'chat';\n  global[chatId].mode = 'chat';\n  global[chatId].conversation = []; // Reset conversation\n  \n  return [{\n    json: {\n      chat_id: chatId,\n      user_text: 'Halo! 👋 Saya AI Productivity Assistant kamu. Ada yang bisa saya bantu?',\n      mode: 'chat',\n      is_ngobrol_command: true, // Flag khusus\n      conversation_history: [],\n      message: $json.message\n    }\n  }];\n} \nelse if (text === '/cancel' || text === '/start') {\n  currentMode = 'menu';\n  global[chatId].mode = 'menu';\n  global[chatId].conversation = [];\n} \nelse if (currentMode === 'chat') {\n  // Jika sudah dalam mode chat, simpan pesan user\n  if (!global[chatId].conversation) {\n    global[chatId].conversation = [];\n  }\n  \n  global[chatId].conversation.push({\n    role: 'user',\n    content: text,\n    timestamp: new Date().toISOString()\n  });\n  \n  // Batasi 10 pesan terakhir\n  if (global[chatId].conversation.length > 10) {\n    global[chatId].conversation = global[chatId].conversation.slice(-10);\n  }\n}\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    user_text: text,\n    mode: currentMode,\n    conversation_history: global[chatId].conversation,\n    message: $json.message\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12864,
+        -4976
+      ],
+      "id": "84ab3d48-e095-4c5b-965a-0a8a57dbf8af",
+      "name": "Code: AI Memory System1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "validate-task-id",
+              "leftValue": "={{ $json.task_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "largerEqual",
+                "value2": "=1"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -11760,
+        -4544
+      ],
+      "id": "02bce39c-5d1f-4e3f-b904-877e41c51d4b",
+      "name": "If (Validate Task ID)1"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "❌ **Task ID Tidak Ditemukan!**\n\nTask ID {{ $json.task_id }} tidak ditemukan di database.\n\nKetik /jadwal untuk lihat daftar task_id yang tersedia.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -11536,
+        -4496
+      ],
+      "id": "d2606cfa-4346-4332-8194-21cf9896d4e0",
+      "name": "Send: Done Error1",
+      "webhookId": "be0770ce-05aa-48b5-aef5-49debe318e71",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -15088,
+        -5360
+      ],
+      "id": "7356fcd5-bdd8-4770-9ffd-2f6126d6951b",
+      "name": "Telegram Trigger",
+      "webhookId": "fddb3a34-bb0d-45f8-abf7-45df43d20916",
+      "alwaysOutputData": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "dMZEJGuHD0aEgmEQ",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-condition",
+              "leftValue": "={{ $json.message.from.is_bot === false }}",
+              "rightValue": "=is true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -14864,
+        -5360
+      ],
+      "id": "7af43f35-9be1-49e3-9ad7-ff0e17bee0f5",
+      "name": "If (Not Bot)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.message?.text || $json.message?.caption || $json.edited_message?.text || 'no text';\nconst chatId = String($json.message?.chat?.id || 'YOUR_TELEGRAM_CHAT_ID');\n\nif (!chatId || chatId === 'null') {\n  throw new Error('Chat ID Missing');\n}\n\nreturn {\n  json: {\n    task: text,\n    source: 'telegram',\n    chat_id: chatId,\n    message: $json.message,\n    user_text: text.trim(),\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14640,
+        -5376
+      ],
+      "id": "832c561f-59cb-46e1-aa81-f585a9680690",
+      "name": "Code: Extract Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "is-command",
+              "leftValue": "={{ $json.user_text.startsWith('/') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -14416,
+        -5376
+      ],
+      "id": "7f194503-56aa-455d-ab1c-80c7911349c0",
+      "name": "If (Is Command?)"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4617f85c-3447-41e3-bbe5-23cbad037d1f"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/jadwal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fba2b903-b750-4310-a221-7799f3cf3c56"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/buat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "5f4b9c65-dcf7-40c6-a0ca-82c59c955349"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/edit",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9e3b0e1e-6210-4075-9f8c-475ddfc9e5a3"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/ngobrol",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c5c3276f-2939-4086-bb57-38ef48ff1e0c"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3bbdbb00-c6da-4454-92d4-6e4561cfaf0a",
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/cancel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "362d5df3-c0f2-4a5c-a3c2-0143485f83f0",
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/done",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -14032,
+        -5520
+      ],
+      "id": "b58dc2f4-3f21-49dd-a5eb-0165be6cea5a",
+      "name": "Switch: Commands"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "Halo 👋 🤖 AI Productivity Assistant\n\nPilih yang kamu butuhkan:\n📅 /jadwal ➤ Lihat kegiatan hari ini\n➕ /buat ➤ Tambah jadwal baru\n✏️ /edit ➤ Ubah jadwal\n💬 /ngobrol ➤ Chat dengan AI\n❌ /cancel ➤ Batalkan proses\n✅ /done [nomor] ➤ Tandai selesai",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "/jadwal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "/buat",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "/edit",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "/ngobrol",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "/cancel",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {},
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12288,
+        -5744
+      ],
+      "id": "ac4a81bc-513e-4fd2-870c-31902b765b3d",
+      "name": "Send: Menu",
+      "webhookId": "9e6dd1b1-abc7-43cd-9d79-944784894758",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule?chat_id=eq.YOUR_TELEGRAM_CHAT_ID&status=eq.pending&order=time.asc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -13440,
+        -5504
+      ],
+      "id": "77bd71f4-f52a-419c-ada9-4085cb155405",
+      "name": "HTTP: Get Schedule"
+    },
+    {
+      "parameters": {
+        "jsCode": "const schedules = $input.all().map(item => item.json);\nconst chatId = 'YOUR_TELEGRAM_CHAT_ID';\nconst today = new Date().toISOString().split('T')[0];\n\nconst filtered = schedules.filter(item => \n  item.chat_id === chatId || item.chat_id === null || !item.chat_id\n);\n\nfiltered.sort((a, b) => {\n  const dateA = a.date ? new Date(`${a.date}T${a.time || '00:00'}`) : new Date('9999-12-31');\n  const dateB = b.date ? new Date(`${b.date}T${b.time || '00:00'}`) : new Date('9999-12-31');\n  return dateA - dateB;\n});\n\nif (!filtered || filtered.length === 0) {\n  return [{\n    json: {\n      chat_id: chatId,\n      reply: '📅 **Jadwal Kosong Hari Ini**\\n\\nBelum ada jadwal untuk ' + today + '.\\n\\nGunakan /buat untuk menambah jadwal baru.'\n    }\n  }];\n}\n\nlet reply = '📅 **Jadwal Hari Ini** (' + today + ')\\n━━━━━━━━━━━━━━\\n\\n';\n\nfiltered.forEach((item, index) => {\n  const icon = item.status === 'done' ? '✅' : '⏳';\n  const statusText = item.status === 'done' ? '[SELESAI]' : '[BELUM]';\n  const taskId = item.id;\n  \n  reply += `${icon} **ID: ${taskId}**\\n   ⏰ ${item.time} - ${item.task}\\n   _${statusText} (Ketik /done ${taskId})_\\n\\n`;\n});\n\nreply += '\\n💡 **Total:** ' + filtered.length + ' tugas\\n💡 **Cara update:** Ketik `/done [task_id]` untuk tandai selesai\\n\\n📌 **Contoh:** `/done ' + (filtered[0]?.id || '1') + '`';\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    reply: reply,\n    schedule_count: filtered.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13216,
+        -5504
+      ],
+      "id": "e050f91b-7ca6-455b-991e-ea63997ecbc5",
+      "name": "Code: Format Jadwal"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{$json.reply}}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12992,
+        -5504
+      ],
+      "id": "0d6a274f-cb62-4044-a15f-f962697bdcbe",
+      "name": "Send: Jadwal Reply",
+      "webhookId": "2cc96b37-3554-42b4-89e4-efa7ed4b0623",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\nconst chatId = $json.chat_id || 'YOUR_TELEGRAM_CHAT_ID';\n\n// Set mode ke 'waiting_edit_input'\nglobal[chatId] = global[chatId] || {};\nglobal[chatId].mode = 'waiting_edit_input';\nglobal[chatId].lastAction = new Date().toISOString();\n\nconsole.log('✅ Mode edit aktif untuk chatId:', chatId);\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    mode: 'waiting_edit_input',\n    message: 'Mode edit aktif - menunggu input user'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13056,
+        -5152
+      ],
+      "id": "05f570e6-eb46-484c-b0b1-be5cdabf3381",
+      "name": "Code: Set Edit Mode"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=✏️ **Edit Jadwal**\n\nKetik /jadwal dulu untuk lihat daftar, lalu kirim:\n\n`nomor | tanggal baru | jam baru | kegiatan baru`\n\nContoh:\n`1 | 2026-04-07 | 15:00 | Rapat baru`\n\natau\n\n`2 | besok | 09:00 | Olahraga`\n\n⚠️ **Ketik /cancel untuk batal**\n\n_Saya menunggu input Anda..._",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12832,
+        -5152
+      ],
+      "id": "85f1c775-c607-4d79-bcc4-6648e1e7ed90",
+      "name": "Send: Ask Edit",
+      "webhookId": "f534786e-0f05-4c7a-b814-b93e2f7da2cc",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.mode}}",
+                    "rightValue": "menu",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.mode}}",
+                    "rightValue": "chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -12656,
+        -4976
+      ],
+      "id": "91d138f3-2d19-4100-857a-e05bfa5bdfda",
+      "name": "Switch: Mode"
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $json.message?.text || '';\nconst chatId = $json.message?.chat?.id;\n\n// Parse /done 2350\nconst match = message.match(/\\/done\\s+(\\d+)/);\n\nif (!match) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: 'Format salah! Gunakan: `/done [task_id]`\\nContoh: `/done 2350`'\n    }\n  }];\n}\n\nconst taskId = match[1];\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    task_id: taskId,\n    error: false\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12592,
+        -4576
+      ],
+      "id": "c0aa74ca-9d77-4960-a4e9-e2f1ef6e6036",
+      "name": "Code: Done Command"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule?id=eq.{{ $json.task_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.task_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $json.chat_id }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $json.date }}"
+            },
+            {
+              "name": "time",
+              "value": "={{ $json.time }}"
+            },
+            {
+              "name": "task",
+              "value": "={{ $json.task }}"
+            },
+            {
+              "name": "status",
+              "value": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -11968,
+        -4688
+      ],
+      "id": "30317dff-4aa1-49e5-aefe-629bc321d01d",
+      "name": "HTTP: Update Task Done"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=✅ **Tugas Selesai!**  \nID: {{ $json.task_id }} \nTugas: {{ $json.task }} \nStatus: Done  \nSemangat! \n🎉 Ketik /jadwal untuk lihat progress.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -11568,
+        -4688
+      ],
+      "id": "c4bbeb54-569c-4e5d-9573-45acfb10a788",
+      "name": "Send: Done Confirm",
+      "webhookId": "1b9fb51a-456f-49cc-8d29-e50d0b66bcb0",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiReply = $json.choices?.[0]?.message?.content || 'AI tidak merespon';\nconst chatId = 'YOUR_TELEGRAM_CHAT_ID';\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    reply: aiReply,\n    user_text: $json.user_text,\n    mode: $json.mode\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12080,
+        -4848
+      ],
+      "id": "ebb19368-f0ea-4c74-87f9-9ae002a5d5e2",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chat_id}}",
+        "text": "={{$json.reply}}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -11856,
+        -4848
+      ],
+      "id": "b3df3dbf-4852-47b7-8e24-4d37d10fd959",
+      "name": "Send a text message1",
+      "webhookId": "75f41afa-3292-41dd-bafa-1fe0a1aca765",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENROUTER_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Kamu adalah asisten produktivitas yang langsung menjawab pertanyaan user dengan spesifik, singkat, dan actionable.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.user_text}}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -12320,
+        -4848
+      ],
+      "id": "f5a2baa5-304d-444b-8191-0220c465e405",
+      "name": "HTTP Request9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-condition",
+              "leftValue": "={{ $json.message.from.is_bot === false }}",
+              "rightValue": "=is true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -13152,
+        -5296
+      ],
+      "id": "75b41ccf-ff93-459d-b20d-4b13eca0ab1b",
+      "name": "If (Not Bot)3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.message?.text || $json.message?.caption || $json.edited_message?.text || 'no text';\nconst chatId = String($json.message?.chat?.id || 'YOUR_TELEGRAM_CHAT_ID');\n\nif (!chatId || chatId === 'null') {\n  throw new Error('Chat ID Missing');\n}\n\nreturn {\n  json: {\n    task: text,\n    source: 'telegram',\n    chat_id: chatId,\n    message: $json.message,\n    user_text: text.trim(),\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12928,
+        -5312
+      ],
+      "id": "ea9e5153-7288-4487-86eb-da99e5041fbc",
+      "name": "Code: Extract Data3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "is-command",
+              "leftValue": "={{ $json.user_text.startsWith('/') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -12704,
+        -5312
+      ],
+      "id": "af01c5de-41c2-441e-a924-de99d7a922c6",
+      "name": "If (Is Command?)3"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/buat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.user_text.toLowerCase().trim()}}",
+                    "rightValue": "/cancel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -12480,
+        -5328
+      ],
+      "id": "eaa1feb1-70db-403f-9cdd-70959d79e9d5",
+      "name": "Switch: Create Commands",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\nconst chatId = String($json.message.chat.id);\n\nglobal[chatId] = {\n  mode: 'create_schedule'\n};\n\nreturn [{ json: { chat_id: chatId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12240,
+        -5440
+      ],
+      "id": "4b2e9f9e-2b61-47a3-9de7-b24db5234cdd",
+      "name": "Code: Set Create Mode (Wait)"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "➕ **Buat Jadwal Baru**\n\nKirim format:\n`tanggal | jam | kegiatan`\n\nContoh:\n`2026-04-06 | 14:00 | Rapat tim`\n\natau\n`besok | 09:00 | Belajar Python`\n\n⚠️ **Ketik /cancel untuk batal**\n\n_Saya menunggu input Anda..._",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12016,
+        -5440
+      ],
+      "id": "459d438a-1d08-4b5e-aeff-8c188f15f5be",
+      "name": "Send: Ask Create Input",
+      "webhookId": "97529c0b-b4d9-4336-899d-0b9a43e9ac6c",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\nconst chatId = 'YOUR_TELEGRAM_CHAT_ID';\n\n// Reset mode ke menu\nglobal[chatId] = global[chatId] || {};\nglobal[chatId].mode = 'menu';\nglobal[chatId].pendingCreate = null;\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    mode: 'menu',\n    reply: '❌ **Dibatalkan**\\n\\nKembali ke menu utama.\\nKetik /start untuk melihat menu.'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12112,
+        -5232
+      ],
+      "id": "60af1057-041a-40bc-9acc-2264e2161adb",
+      "name": "Code: Cancel Create"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{$json.reply}}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -11888,
+        -5232
+      ],
+      "id": "ff35cb6d-9435-4eed-a0bc-e3a11668c5ab",
+      "name": "Send: Cancel Create",
+      "webhookId": "b083eb18-76e9-4f40-9633-709ad9db0ec9",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\n\n// handle 2 kemungkinan sumber data\nconst chatId =\n  $json.message?.chat?.id ||\n  $json.result?.chat?.id;\n\nif (!chatId) {\n  throw new Error(\"Chat ID tidak ditemukan\");\n}\n\nconst mode = global[chatId]?.mode || 'menu';\n\nreturn [{\n  json: {\n    ...$json,\n    chat_id: String(chatId),\n    mode: mode,\n    text:\n      $json.message?.text ||\n      $json.result?.text ||\n      ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13392,
+        -4528
+      ],
+      "id": "00501660-de6c-4f1a-8085-7ecbfe1f5d58",
+      "name": "Code: Check Create Mode"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "83a26608-0dba-45b7-af54-15f7ad833c99",
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "create_schedule",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -13056,
+        -4432
+      ],
+      "id": "5baf4c82-cf4b-47b7-82d3-4614b929cf92",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.mode}}",
+                    "rightValue": "chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "78110554-0999-4bc1-b2f5-ca3037d5b317"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e7cc6e2d-0c74-4eac-b222-a5607230dbd7",
+                    "leftValue": "={{$json.mode}}",
+                    "rightValue": "create_schedule",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "62665050-41f7-40a2-a38a-54a2a1685d99",
+                    "leftValue": "={{ $json.mode }}",
+                    "rightValue": "waiting_edit_input",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -13872,
+        -4976
+      ],
+      "id": "491c5381-d48c-4418-8931-b0df9984bdb6",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{$json.reply}}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12480,
+        -4704
+      ],
+      "id": "9a4b67a4-f840-48f1-a680-bbfa62a386f9",
+      "name": "Send: Cancel",
+      "webhookId": "b5ecc03e-686f-4fe1-83f7-d773b9b759e2",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\nconst chatId = 'YOUR_TELEGRAM_CHAT_ID';\n\nglobal[chatId] = global[chatId] || {};\nglobal[chatId].mode = 'menu';\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    mode: 'menu',\n    reply: '❌ **Dibatalkan**\\n\\nKembali ke menu utama.\\nKetik /start untuk melihat menu.'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12704,
+        -4704
+      ],
+      "id": "4f7f246e-df62-4e18-8799-c7af454d6aa2",
+      "name": "Code: Cancel"
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\nconst chatId = String($json.message.chat.id);\n\nconst mode = global[chatId]?.mode || 'chat';\n\nreturn [{\n  json: {\n    ...$json,\n    mode: mode\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14080,
+        -4976
+      ],
+      "id": "3175f05b-8dd4-45a2-9bca-8108b254707f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chat_id}}",
+        "text": "=⏳ Tunggu sebentar ya...\n\nSedang menyimpan jadwal:\n📝 *{{$json.task}}*\n📆 {{$json.date}} | ⏰ {{$json.time}}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "19a707fe-7f89-498e-9ecf-a5e9c10e38a7",
+      "name": "Send: Processing",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12560,
+        -4448
+      ],
+      "webhookId": "f2364877-2a17-45c9-9801-be30a3596e81",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.text || '';\nconst chatId = $json.chat_id;\n\nif (!text || !text.includes('|')) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: '❌ Format salah!\\n\\nGunakan:\\n`tanggal | jam | kegiatan`\\n\\nContoh:\\n`2026-04-06 | 14:00 | Rapat tim`\\natau\\n`besok | 09:00 | Belajar Python`'\n    }\n  }];\n}\n\nconst parts = text.split('|').map(p => p.trim());\n\nif (parts.length !== 3) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: '❌ Format tidak lengkap!\\n\\nHarus 3 bagian: `tanggal | jam | kegiatan`'\n    }\n  }];\n}\n\nlet [dateInput, time, task] = parts;\n\n// Resolve tanggal relatif\nconst todayObj = new Date();\ntodayObj.setHours(0, 0, 0, 0);\n\nlet resolvedDate;\nconst d = dateInput.toLowerCase().trim();\n\nif (d === 'hari ini' || d === 'today') {\n  resolvedDate = new Date(todayObj);\n} else if (d === 'besok' || d === 'tomorrow') {\n  resolvedDate = new Date(todayObj);\n  resolvedDate.setDate(todayObj.getDate() + 1);\n} else if (d === 'lusa') {\n  resolvedDate = new Date(todayObj);\n  resolvedDate.setDate(todayObj.getDate() + 2);\n} else {\n  resolvedDate = new Date(dateInput);\n  if (isNaN(resolvedDate.getTime())) {\n    return [{\n      json: {\n        chat_id: chatId,\n        error: true,\n        reply: '❌ Format tanggal tidak valid!\\n\\nGunakan: `YYYY-MM-DD` atau kata `besok`/`hari ini`'\n      }\n    }];\n  }\n}\n\nconst yyyy = resolvedDate.getFullYear();\nconst mm = String(resolvedDate.getMonth() + 1).padStart(2, '0');\nconst dd = String(resolvedDate.getDate()).padStart(2, '0');\nconst finalDate = `${yyyy}-${mm}-${dd}`;\n\n// Validate time format\nconst timeRegex = /^\\d{2}:\\d{2}$/;\nif (!timeRegex.test(time)) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: '❌ Format jam tidak valid!\\n\\nGunakan format: `HH:MM`\\nContoh: `14:00`'\n    }\n  }];\n}\n\n// Reset mode\nconst global = $getWorkflowStaticData('global');\nif (global[chatId]) global[chatId].mode = 'menu';\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    date: finalDate,\n    time: time,\n    task: task,\n    error: false\n  }\n}];"
+      },
+      "id": "cef4ae71-1c83-4657-aba1-bd2ae96cc25a",
+      "name": "Code in JavaScript8",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12752,
+        -4448
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $node['Code in JavaScript8'].json.chat_id }}\",\n  \"date\": \"{{ $node['Code in JavaScript8'].json.date }}\",\n  \"time\": \"{{ $node['Code in JavaScript8'].json.time }}\",\n  \"task\": \"{{ $node['Code in JavaScript8'].json.task }}\",\n  \"status\": \"pending\"\n}",
+        "options": {}
+      },
+      "id": "9b08fa69-047c-4226-a253-0c5dc81f20a4",
+      "name": "HTTP: Insert Schedule (Create)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -12336,
+        -4480
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=✅ **Jadwal Berhasil Ditambah!**\n\n📆 Tanggal: {{$json.date}}\n⏰ Jam: {{$json.time}}\n📝 Kegiatan: {{$json.task}}\n\n🎯 Semangat! Ketik /jadwal untuk lihat semua jadwal.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "2aebb3e5-745b-4da6-a7c9-d927a4fc9427",
+      "name": "Send: Create Confirm",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12112,
+        -4528
+      ],
+      "webhookId": "9da0a089-8cd1-4a2c-be68-ef4f98187b2f",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const global = $getWorkflowStaticData('global');\nconst text = $json.user_text || $json.text || '';\nconst chatId = 'YOUR_TELEGRAM_CHAT_ID';\n\n// Format: task_id | tanggal | jam | kegiatan\nif (!text || !text.includes('|')) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: '❌ Format salah!\\n\\nGunakan:\\n`task_id | tanggal | jam | kegiatan`\\n\\nContoh:\\n`2367 | 2026-04-21 | 10:00 | Rapat baru`\\n\\nKetik /jadwal untuk lihat task_id'\n    }\n  }];\n}\n\nconst parts = text.split('|').map(p => p.trim());\n\nif (parts.length !== 4) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: '❌ Format tidak lengkap!\\n\\nHarus 4 bagian: `task_id | tanggal | jam | kegiatan`'\n    }\n  }];\n}\n\nconst [taskIdStr, dateInput, time, task] = parts;\n\n// Validate task_id\nconst taskId = parseInt(taskIdStr);\nif (isNaN(taskId) || taskId <= 0) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: '❌ Task ID tidak valid!\\n\\nTask ID harus angka positif.\\nKetik /jadwal untuk lihat daftar task_id'\n    }\n  }];\n}\n\n// Resolve tanggal (support \"besok\", \"hari ini\", dll)\nconst todayObj = new Date();\ntodayObj.setHours(0, 0, 0, 0);\n\nlet resolvedDate;\nconst d = dateInput.toLowerCase().trim();\n\nif (d === 'hari ini' || d === 'today') {\n  resolvedDate = new Date(todayObj);\n} else if (d === 'besok' || d === 'tomorrow') {\n  resolvedDate = new Date(todayObj);\n  resolvedDate.setDate(todayObj.getDate() + 1);\n} else if (d === 'lusa') {\n  resolvedDate = new Date(todayObj);\n  resolvedDate.setDate(todayObj.getDate() + 2);\n} else {\n  resolvedDate = new Date(dateInput);\n  if (isNaN(resolvedDate.getTime())) {\n    return [{\n      json: {\n        chat_id: chatId,\n        error: true,\n        reply: '❌ Format tanggal tidak valid!\\n\\nGunakan: `YYYY-MM-DD` atau kata `besok`/`hari ini`'\n      }\n    }];\n  }\n}\n\nconst yyyy = resolvedDate.getFullYear();\nconst mm = String(resolvedDate.getMonth() + 1).padStart(2, '0');\nconst dd = String(resolvedDate.getDate()).padStart(2, '0');\nconst finalDate = `${yyyy}-${mm}-${dd}`;\n\n// Validate time\nconst timeRegex = /^\\d{2}:\\d{2}$/;\nif (!timeRegex.test(time)) {\n  return [{\n    json: {\n      chat_id: chatId,\n      error: true,\n      reply: '❌ Format jam tidak valid!\\n\\nGunakan format: `HH:MM`\\nContoh: `14:00`'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    chat_id: chatId,\n    task_id: taskId,\n    new_date: finalDate,\n    new_time: time,\n    new_task: task,\n    error: false\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13392,
+        -4336
+      ],
+      "id": "283c65e2-e2f8-4cb8-b69d-7d73dcb5bcfb",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "url": "=https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule?id=eq.{{ $json.task_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"task\": \"{{$json.new_task}}\",\n  \"date\": \"{{$json.new_date}}\",\n  \"time\": \"{{$json.new_time}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -13056,
+        -4272
+      ],
+      "id": "4a9c117d-30d6-4f37-a13c-104f35073bcf",
+      "name": "HTTP Request",
+      "executeOnce": true,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ambil SEMUA data dari input (gabungan dari node sebelumnya)\nconst input = $input.first().json;\n\n// Karena kamu cuma punya 1 jalur, kita anggap:\nconst oldData = input;       // dari HTTP Request\nconst parseResult = input;   // dari Code sebelumnya (yang parse)\n\n// Kalau data lama tidak ditemukan\nif (!oldData || !oldData.id) {\n  return [{\n    json: {\n      chat_id: 'YOUR_TELEGRAM_CHAT_ID',\n      error: true,\n      reply: '❌ Task ID ' + (parseResult.task_id || '?') + ' tidak ditemukan!\\n\\nKetik /jadwal untuk lihat daftar task yang ada.'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    chat_id: 'YOUR_TELEGRAM_CHAT_ID',\n    task_id: oldData.id,\n    old_date: oldData.date || 'N/A',\n    old_time: oldData.time || 'N/A',\n    old_task: oldData.task || 'N/A',\n    new_date: parseResult.new_date,\n    new_time: parseResult.new_time,\n    new_task: parseResult.new_task,\n    error: false\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12848,
+        -4272
+      ],
+      "id": "ecc7af38-a8f3-4c4a-a430-538767235f7e",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=✏️ **Edit Jadwal - Berhasil**",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "ef3ab458-c52a-4562-9c41-2090c6adf48e",
+      "name": "Send: Create Confirm1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -12384,
+        -4272
+      ],
+      "webhookId": "c6462e67-e2f7-43fc-8320-423a909993e4",
+      "credentials": {
+        "telegramApi": {
+          "id": "0fhpwOU7sxhQMEoq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://YOUR_PROJECT_ID.supabase.co/rest/v1/schedule",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.task_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"date\": \"{{ $node['Code in JavaScript1'].json.new_date }}\",\n  \"time\": \"{{ $node['Code in JavaScript1'].json.new_time }}\",\n  \"task\": \"{{ $node['Code in JavaScript1'].json.new_task }}\"\n}\n",
+        "options": {}
+      },
+      "id": "4af74c0e-1e53-4f60-9bf9-92a119186429",
+      "name": "HTTP: Edit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -12624,
+        -4272
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request8": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook (Web App)1": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Webhook Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Webhook Data1": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Get Current Schedule1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Get Current Schedule1": {
+      "main": [
+        [
+          {
+            "node": "HTTP: AI Parse Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: AI Parse Request1": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse AI Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse AI Response1": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Insert Schedule from Web1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Insert Schedule from Web1": {
+      "main": [
+        [
+          {
+            "node": "Code: Format Webhook Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: AI Memory System1": {
+      "main": [
+        [
+          {
+            "node": "Switch: Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If (Validate Task ID)1": {
+      "main": [
+        [
+          {
+            "node": "Send: Done Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send: Done Error1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If (Not Bot)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If (Not Bot)": {
+      "main": [
+        [
+          {
+            "node": "Code: Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Extract Data": {
+      "main": [
+        [
+          {
+            "node": "If (Is Command?)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If (Is Command?)": {
+      "main": [
+        [
+          {
+            "node": "Switch: Commands",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Commands": {
+      "main": [
+        [
+          {
+            "node": "Send: Menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: Get Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If (Not Bot)3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Set Edit Mode",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: AI Memory System1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Cancel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Done Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Get Schedule": {
+      "main": [
+        [
+          {
+            "node": "Code: Format Jadwal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Format Jadwal": {
+      "main": [
+        [
+          {
+            "node": "Send: Jadwal Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Set Edit Mode": {
+      "main": [
+        [
+          {
+            "node": "Send: Ask Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Mode": {
+      "main": [
+        [
+          {
+            "node": "Send: Menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Done Command": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Update Task Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Update Task Done": {
+      "main": [
+        [
+          {
+            "node": "Send: Done Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request9": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If (Not Bot)3": {
+      "main": [
+        [
+          {
+            "node": "Code: Extract Data3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Extract Data3": {
+      "main": [
+        [
+          {
+            "node": "If (Is Command?)3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If (Is Command?)3": {
+      "main": [
+        [
+          {
+            "node": "Switch: Create Commands",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Create Commands": {
+      "main": [
+        [
+          {
+            "node": "Code: Set Create Mode (Wait)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Cancel Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Set Create Mode (Wait)": {
+      "main": [
+        [
+          {
+            "node": "Send: Ask Create Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send: Ask Create Input": {
+      "main": [
+        []
+      ]
+    },
+    "Code: Cancel Create": {
+      "main": [
+        [
+          {
+            "node": "Send: Cancel Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Check Create Mode": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request9",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Check Create Mode",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Cancel": {
+      "main": [
+        [
+          {
+            "node": "Send: Cancel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send: Processing": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Insert Schedule (Create)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript8": {
+      "main": [
+        [
+          {
+            "node": "Send: Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Insert Schedule (Create)": {
+      "main": [
+        [
+          {
+            "node": "Send: Create Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Edit": {
+      "main": [
+        [
+          {
+            "node": "Send: Create Confirm1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Jakarta",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "bfc76bfc-d75f-4f68-b848-816c5912e671",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28bbd98d3f6c3210502f5838c3eebddcb08eb5fd77e1da31d21b9d02b5b115ed"
+  },
+  "id": "MvT3NCoTy6CqMsNa",
+  "tags": []
+}

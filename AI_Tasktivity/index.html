@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Tasktivity - AI-Powered Productivity Platform">
+  <meta name="theme-color" content="#0a0b14">
+  <title>Tasktivity - AI Productivity Platform</title>
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- External Libraries (defer) -->
+   <!-- External Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js" defer></script>
+  <!-- App Scripts (defer = load parallel, execute in order after DOM) -->
+  <script src="js/config.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/gamification.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+
+  <!-- ===================== LOADING SCREEN ===================== -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-logo">
+        <span class="material-icons-round loading-icon">bolt</span>
+      </div>
+      <h1 class="loading-title">Tasktivity</h1>
+      <p class="loading-sub">AI Productivity Platform</p>
+      <div class="loading-bar">
+        <div class="loading-bar-inner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MAIN APP ===================== -->
+  <div id="app" class="app" style="display:none;">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <span class="material-icons-round brand-icon">bolt</span>
+        <span class="brand-text">Tasktivity</span>
+      </div>
+
+      <!-- Profile -->
+      <div class="sidebar-profile">
+        <div class="profile-avatar">
+          <span class="material-icons-round">person</span>
+        </div>
+        <div class="profile-detail">
+          <span class="profile-name" id="sidebarName">User</span>
+          <div class="profile-level-row">
+            <span class="level-pill" id="sidebarLevel">Lv 1</span>
+            <div class="xp-bar-sm"><div class="xp-bar-sm-fill" id="sidebarXPBar"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <nav class="sidebar-nav" id="sidebarNav">
+        <a href="#" class="nav-link active" data-page="dashboard">
+          <span class="material-icons-round">space_dashboard</span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="#" class="nav-link" data-page="tasks">
+          <span class="material-icons-round">task_alt</span>
+          <span class="nav-label">Tugas</span>
+          <span class="nav-count" id="navTaskCount" style="display:none;">0</span>
+        </a>
+        <a href="#" class="nav-link" data-page="calendar">
+          <span class="material-icons-round">calendar_month</span>
+          <span class="nav-label">Kalender</span>
+        </a>
+        <a href="#" class="nav-link" data-page="analytics">
+          <span class="material-icons-round">insights</span>
+          <span class="nav-label">Analitik</span>
+        </a>
+        <a href="#" class="nav-link" data-page="ai">
+          <span class="material-icons-round">smart_toy</span>
+          <span class="nav-label">AI Assistant</span>
+          <span class="nav-pulse"></span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-bottom">
+        <a href="#" class="nav-link" data-page="settings">
+          <span class="material-icons-round">settings</span>
+          <span class="nav-label">Pengaturan</span>
+        </a>
+        <div class="streak-box" id="streakBox">
+          <span class="material-icons-round streak-fire">local_fire_department</span>
+          <span class="streak-num" id="sidebarStreak">0</span>
+          <span class="streak-text">hari streak</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile overlay -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- ===== MAIN ===== -->
+    <main class="main">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-only" id="btnMobileMenu" aria-label="Menu">
+            <span class="material-icons-round">menu</span>
+          </button>
+          <div>
+            <h1 class="topbar-title" id="topbarTitle">Dashboard</h1>
+            <p class="topbar-sub" id="topbarSub"></p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span class="topbar-date" id="topbarDate"></span>
+          <button class="icon-btn" id="btnQuickAdd" title="Tambah Cepat (Ctrl+N)">
+            <span class="material-icons-round">add_circle</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Pages -->
+      <div class="pages" id="pages">
+
+        <!-- ============ DASHBOARD ============ -->
+        <section class="page active" id="pageDashboard">
+
+          <!-- Hero -->
+          <div class="hero" id="heroCard">
+            <div class="hero-left">
+              <h2 class="hero-greeting" id="heroGreeting">Selamat Pagi!</h2>
+              <p class="hero-sub" id="heroSub">Siap produktif hari ini?</p>
+            </div>
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <span class="hero-num" id="heroTotal">0</span>
+                <span class="hero-label">Total</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-num" id="heroDone">0</span>
+                <span class="hero-label">Selesai</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-num" id="heroPending">0</span>
+                <span class="hero-label">Tersisa</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stat cards -->
+          <div class="stat-row">
+            <div class="stat-card c-purple">
+              <div class="stat-icon"><span class="material-icons-round">star</span></div>
+              <div class="stat-body">
+                <span class="stat-val" id="statXP">0</span>
+                <span class="stat-lbl">Total XP</span>
+              </div>
+            </div>
+            <div class="stat-card c-orange">
+              <div class="stat-icon"><span class="material-icons-round">local_fire_department</span></div>
+              <div class="stat-body">
+                <span class="stat-val" id="statStreak">0</span>
+                <span class="stat-lbl">Streak</span>
+              </div>
+            </div>
+            <div class="stat-card c-green">
+              <div class="stat-icon"><span class="material-icons-round">military_tech</span></div>
+              <div class="stat-body">
+                <span class="stat-val" id="statLevel">1</span>
+                <span class="stat-lbl">Level</span>
+              </div>
+            </div>
+            <div class="stat-card c-blue">
+              <div class="stat-icon"><span class="material-icons-round">speed</span></div>
+              <div class="stat-body">
+                <span class="stat-val" id="statRate">0%</span>
+                <span class="stat-lbl">Completion</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Two-col: Schedule + AI Insight -->
+          <div class="grid-2col">
+            <div class="card">
+              <div class="card-head">
+                <h3><span class="material-icons-round">schedule</span>Jadwal Hari Ini</h3>
+                <button class="btn-sm btn-primary" id="btnAddSchedule">
+                  <span class="material-icons-round">add</span>Tambah
+                </button>
+              </div>
+              <div class="card-body" id="todayScheduleList">
+                <div class="empty">
+                  <span class="material-icons-round">event_available</span>
+                  <p>Belum ada jadwal hari ini</p>
+                </div>
+              </div>
+            </div>
+            <div class="card card-ai">
+              <div class="card-head">
+                <h3><span class="material-icons-round">psychology</span>AI Insight</h3>
+                <button class="icon-btn-sm" id="btnRefreshInsight" title="Refresh">
+                  <span class="material-icons-round">refresh</span>
+                </button>
+              </div>
+              <div class="card-body" id="aiInsightBox">
+                <div class="typing-indicator">
+                  <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <p class="typing-text">AI sedang menganalisis...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="card">
+            <div class="card-head">
+              <h3><span class="material-icons-round">bar_chart</span>Progres Mingguan</h3>
+              <div class="tab-group">
+                <button class="tab active" data-chart="tasks">Tugas</button>
+                <button class="tab" data-chart="xp">XP</button>
+              </div>
+            </div>
+            <div class="card-body chart-wrap">
+              <canvas id="weeklyChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ TASKS ============ -->
+        <section class="page" id="pageTasks">
+          <div class="page-toolbar">
+            <div class="filter-row" id="filterRow">
+              <button class="filter-chip active" data-filter="all">Semua</button>
+              <button class="filter-chip" data-filter="pending">Belum Selesai</button>
+              <button class="filter-chip" data-filter="done">Selesai</button>
+              <button class="filter-chip" data-filter="high">Prioritas Tinggi</button>
+            </div>
+            <button class="btn btn-primary" id="btnNewTask">
+              <span class="material-icons-round">add</span>Tugas Baru
+            </button>
+          </div>
+          <div class="task-list" id="taskList">
+            <div class="empty"><span class="material-icons-round">checklist</span><p>Belum ada tugas</p></div>
+          </div>
+        </section>
+
+        <!-- ============ CALENDAR ============ -->
+        <section class="page" id="pageCalendar">
+          <div class="cal-toolbar">
+            <button class="icon-btn" id="calPrev"><span class="material-icons-round">chevron_left</span></button>
+            <h3 class="cal-title" id="calTitle">April 2026</h3>
+            <button class="icon-btn" id="calNext"><span class="material-icons-round">chevron_right</span></button>
+            <button class="btn-sm btn-outline" id="calToday">Hari Ini</button>
+          </div>
+          <div class="cal-grid" id="calGrid">
+            <div class="cal-hdr">Sen</div><div class="cal-hdr">Sel</div><div class="cal-hdr">Rab</div>
+            <div class="cal-hdr">Kam</div><div class="cal-hdr">Jum</div><div class="cal-hdr">Sab</div><div class="cal-hdr">Min</div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-head"><h3 id="calDetailTitle">Pilih tanggal</h3></div>
+            <div class="card-body" id="calDetailList"></div>
+          </div>
+        </section>
+
+        <!-- ============ ANALYTICS ============ -->
+        <section class="page" id="pageAnalytics">
+          <div class="analytics-grid">
+            <div class="card"><div class="card-head"><h3><span class="material-icons-round">trending_up</span>Produktivitas</h3></div><div class="card-body chart-wrap"><canvas id="prodChart"></canvas></div></div>
+            <div class="card"><div class="card-head"><h3><span class="material-icons-round">pie_chart</span>Distribusi</h3></div><div class="card-body chart-wrap"><canvas id="distChart"></canvas></div></div>
+            <div class="card"><div class="card-head"><h3><span class="material-icons-round">access_time</span>Waktu Produktif</h3></div><div class="card-body chart-wrap"><canvas id="timeChart"></canvas></div></div>
+            <div class="card">
+              <div class="card-head"><h3><span class="material-icons-round">assessment</span>Ringkasan</h3></div>
+              <div class="card-body">
+                <div class="summary-row"><span>Total Minggu Ini</span><strong id="sumTotal">0</strong></div>
+                <div class="summary-row"><span>Completion Rate</span><strong id="sumRate">0%</strong></div>
+                <div class="summary-row"><span>Rata-rata/Hari</span><strong id="sumAvg">0</strong></div>
+                <div class="summary-row"><span>Best Streak</span><strong id="sumStreak">0 hari</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ AI CHAT ============ -->
+        <section class="page" id="pageAi">
+          <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+              <div class="chat-welcome" id="chatWelcome">
+                <div class="chat-welcome-icon"><span class="material-icons-round">smart_toy</span></div>
+                <h3>Halo! Saya AI Assistant kamu</h3>
+                <p>Saya bisa bantu atur jadwal, analisis produktivitas, dan jawab pertanyaanmu.</p>
+                <div class="chip-row">
+                  <button class="chip" data-msg="Buatkan jadwal hari ini">Buat jadwal hari ini</button>
+                  <button class="chip" data-msg="Analisis produktivitas saya minggu ini">Analisis produktivitas</button>
+                  <button class="chip" data-msg="Tips meningkatkan fokus">Tips fokus</button>
+                  <button class="chip" data-msg="Apa prioritas saya hari ini?">Prioritas hari ini</button>
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-wrap">
+              <div class="chat-input-box">
+                <textarea id="chatInput" placeholder="Ketik pesan..." rows="1"></textarea>
+                <button class="chat-send" id="btnChatSend"><span class="material-icons-round">send</span></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ SETTINGS ============ -->
+        <section class="page" id="pageSettings">
+          <div class="settings-grid">
+            <!-- Profile -->
+            <div class="card">
+              <div class="card-head"><h3><span class="material-icons-round">person</span>Profil</h3></div>
+              <div class="card-body">
+                <label class="field-label">Nama</label>
+                <input type="text" class="field-input" id="setName" placeholder="Nama kamu" value="User">
+                <label class="field-label">Chat ID (Telegram)</label>
+                <input type="text" class="field-input" id="setChatId" placeholder="Chat ID" value="">
+                <button class="btn btn-primary" id="btnSaveProfile" style="margin-top:12px">Simpan</button>
+              </div>
+            </div>
+            <!-- Theme -->
+            <div class="card">
+              <div class="card-head"><h3><span class="material-icons-round">palette</span>Tampilan</h3></div>
+              <div class="card-body">
+                <label class="field-label">Tema</label>
+                <div class="theme-row" id="themeRow">
+                  <button class="theme-opt active" data-theme="dark">Gelap</button>
+                  <button class="theme-opt" data-theme="light">Terang</button>
+                  <button class="theme-opt" data-theme="midnight">Midnight</button>
+                </div>
+                <label class="field-label" style="margin-top:16px">Warna Aksen</label>
+                <div class="color-row" id="colorRow">
+                  <button class="color-dot active" data-color="#7c5cfc" style="--c:#7c5cfc"></button>
+                  <button class="color-dot" data-color="#ef4444" style="--c:#ef4444"></button>
+                  <button class="color-dot" data-color="#10b981" style="--c:#10b981"></button>
+                  <button class="color-dot" data-color="#f59e0b" style="--c:#f59e0b"></button>
+                  <button class="color-dot" data-color="#3b82f6" style="--c:#3b82f6"></button>
+                  <button class="color-dot" data-color="#ec4899" style="--c:#ec4899"></button>
+                </div>
+              </div>
+            </div>
+            <!-- Integrations -->
+            <div class="card">
+              <div class="card-head"><h3><span class="material-icons-round">link</span>Integrasi</h3></div>
+              <div class="card-body">
+                <div class="integration"><div class="integ-info"><span class="material-icons-round">smart_toy</span><div><strong>n8n Webhook</strong><small>Automation engine</small></div></div><span class="integ-badge ok">Aktif</span></div>
+                <div class="integration"><div class="integ-info"><span class="material-icons-round">storage</span><div><strong>Supabase</strong><small>Database</small></div></div><span class="integ-badge ok" id="dbStatus">Aktif</span></div>
+                <div class="integration"><div class="integ-info"><span class="material-icons-round">send</span><div><strong>Telegram</strong><small>Notifikasi</small></div></div><span class="integ-badge ok">Aktif</span></div>
+              </div>
+            </div>
+            <!-- Notifications -->
+            <div class="card">
+              <div class="card-head"><h3><span class="material-icons-round">notifications</span>Notifikasi</h3></div>
+              <div class="card-body">
+                <div class="toggle-row"><div><strong>Pengingat Tugas</strong><small>Notif sebelum deadline</small></div><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
+                <div class="toggle-row"><div><strong>Laporan Harian</strong><small>Ringkasan produktivitas</small></div><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
+                <div class="toggle-row"><div><strong>Streak Reminder</strong><small>Jaga streak harian</small></div><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /pages -->
+    </main>
+  </div><!-- /app -->
+
+  <!-- ===================== MODALS ===================== -->
+
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" id="modalTask">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Tambah Tugas Baru</h3>
+        <button class="icon-btn modal-x" data-close="modalTask"><span class="material-icons-round">close</span></button>
+      </div>
+      <div class="modal-body">
+        <label class="field-label">Nama Tugas</label>
+        <input type="text" class="field-input" id="fldTaskTitle" placeholder="Contoh: Meeting tim project">
+        <div class="field-row">
+          <div><label class="field-label">Tanggal</label><input type="date" class="field-input" id="fldTaskDate"></div>
+          <div><label class="field-label">Waktu</label><input type="time" class="field-input" id="fldTaskTime"></div>
+        </div>
+        <label class="field-label">Prioritas</label>
+        <div class="priority-row" id="priorityRow">
+          <button class="prio-btn" data-p="low"><span class="prio-dot low"></span>Rendah</button>
+          <button class="prio-btn active" data-p="medium"><span class="prio-dot med"></span>Sedang</button>
+          <button class="prio-btn" data-p="high"><span class="prio-dot high"></span>Tinggi</button>
+        </div>
+        <label class="field-label">Catatan (opsional)</label>
+        <textarea class="field-input" id="fldTaskNotes" rows="2" placeholder="Catatan tambahan..."></textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close="modalTask">Batal</button>
+        <button class="btn btn-primary" id="btnSaveTask"><span class="material-icons-round">check</span>Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Schedule Modal -->
+  <div class="modal-overlay" id="modalAISchedule">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Buat Jadwal dengan AI</h3>
+        <button class="icon-btn modal-x" data-close="modalAISchedule"><span class="material-icons-round">close</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="ai-prompt-box">
+          <span class="material-icons-round">auto_awesome</span>
+          <p>Ceritakan rencana kamu, AI akan menyusun jadwal optimal.</p>
+        </div>
+        <textarea class="field-input" id="fldAIInput" rows="3" placeholder="Contoh: Meeting jam 9, coding siang, olahraga sore..."></textarea>
+        <div id="aiScheduleResult" style="display:none"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close="modalAISchedule">Batal</button>
+        <button class="btn btn-primary" id="btnGenerate"><span class="material-icons-round">auto_awesome</span>Generate</button>
+        <button class="btn btn-success" id="btnApplySchedule" style="display:none"><span class="material-icons-round">check</span>Terapkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Up -->
+  <div class="modal-overlay" id="modalLevelUp">
+    <div class="modal modal-sm">
+      <div class="levelup-inner">
+        <div class="levelup-trophy"><span class="material-icons-round">emoji_events</span></div>
+        <h2>Level Up!</h2>
+        <p class="levelup-num" id="levelUpNum">Level 2</p>
+        <p class="levelup-msg">Lanjutkan produktivitasmu!</p>
+        <button class="btn btn-primary" data-close="modalLevelUp">Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastBox" class="toast-box"></div>
+
+  <!-- XP popup -->
+  <div id="xpPopup" class="xp-popup" style="display:none">
+    <span class="material-icons-round">star</span>
+    <span id="xpPopupText">+10 XP</span>
+  </div>
+
+</body>
+</html>
